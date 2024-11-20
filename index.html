@@ -1,0 +1,80 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Intro to layers | Sample | ArcGIS Maps SDK for JavaScript 4.31</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.31/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #layerToggle {
+        top: 20px;
+        right: 20px;
+        position: absolute;
+        z-index: 99;
+        background-color: white;
+        border-radius: 8px;
+        padding: 10px;
+        opacity: 0.75;
+      }
+    </style>
+
+    <script>
+      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer"], (WebMap, MapView, TileLayer, FeatureLayer) => {
+        /*****************************************************************
+         * Create two TileLayer instances. One pointing to a
+         * cached map service depicting U.S. male population and the other
+         * pointing to a layer of roads and highways.
+         *****************************************************************/
+        const transportationLayer = new TileLayer({
+          url: "https://server.arcgisonline.com/arcgis/rest/services/Reference/World_Transportation/MapServer",
+          // This property can be used to uniquely identify the layer
+          id: "streets",
+          visible: false
+        });
+
+        const housingLayer = new TileLayer({
+          url:
+            "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/New_York_Housing_Density/MapServer",
+          id: "ny-housing",
+          opacity: 0.9
+        });
+
+        /*****************************************************************
+         * Layers may be added to the map in the map's constructor
+         *****************************************************************/
+        const webmap = new WebMap({
+          portalItem: { // autocasts as new PortalItem()
+            id: "1143fa1055ac4afaac271f9c5ca33c48"
+          }
+        });
+
+        /*****************************************************************
+         * Or they may be added to the map using map.add()
+         *****************************************************************/
+        webmap.add(transportationLayer);
+
+        const view = new MapView({
+          container: "viewDiv",
+          map: webmap
+        });
+        
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+    <span id="layerToggle" class="esri-widget"> <input type="checkbox" id="streetsLayer" /> Transportation </span>
+  </body>
+</html>
