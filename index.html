@@ -2,8 +2,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Intro to layers | Sample | ArcGIS Maps SDK for JavaScript 4.31</title>
-
+    <title>Wisconsin National Marine Sanctuary Web Map</title>
+    <script type="module" src="https://js.arcgis.com/calcite-components/2.13.2/calcite.esm.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.13.2/calcite.css" />
     <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.31/"></script>
 
@@ -30,29 +31,43 @@
     </style>
 
     <script>
-      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer"], (WebMap, MapView, TileLayer, FeatureLayer) => {
-        /*****************************************************************
-         * Create two TileLayer instances. One pointing to a
-         * cached map service depicting U.S. male population and the other
-         * pointing to a layer of roads and highways.
-         *****************************************************************/
-       
-        /*****************************************************************
-         * Layers may be added to the map in the map's constructor
-         *****************************************************************/
+      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils) => {   
 
+      const cameraModal = document.getElementById("cameraModal"); 
+      const ndbcModal = document.getElementById("ndbcModal"); 
+
+      cameraModal.open = false;
+      ndbcModal.open = false;    
+
+        // Define a pop-up for beachCameraLayer
+          const popupBeachCameras = {
+            title: "{name}",
+            content:
+              '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
+          };
+
+          // Define a pop-up for beachCameraLayer
+          const popupStations = {
+            title: "{name}",
+            content:
+              '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
+          };
 
          const ndbcLayer = new FeatureLayer({
           url: "https://services2.arcgis.com/RPhrOu9XQzI31xTa/arcgis/rest/services/WI_Marine/FeatureServer",
           // This property can be used to uniquely identify the layer
           id: "ndbc",
-          visible: true
+          visible: true,
+          outFields: ["*"],
+          popupTemplate: popupStations
         });
 
         const beachCameraLayer = new FeatureLayer({
           url: "https://services2.arcgis.com/RPhrOu9XQzI31xTa/arcgis/rest/services/Beach_Cameras/FeatureServer",
           id: "beach-cameras",
-          visible: true
+          visible: true,
+          outFields: ["*"],
+          popupTemplate: popupBeachCameras
         });
 
         const webmap = new WebMap({
@@ -68,7 +83,93 @@
 
         webmap.add(beachCameraLayer, 0);
         webmap.add(ndbcLayer, 0);
-        
+
+        // what the popup for a selected feature 
+        reactiveUtils.watch(
+          () => view.popup.selectedFeature,
+          (graphic) => {
+            if (graphic) {
+                console.log(graphic);
+                if (graphic.layer.id === "beach-cameras") {                     
+                  const cameraName = graphic.attributes.name;
+                  const cameraUrl = graphic.attributes.url;
+                  console.log(cameraUrl);
+                  document.getElementById("cameraFrame").src = cameraUrl;
+                  cameraModal.open = true;
+                  cameraModal.heading = cameraName;
+                } else if (graphic.layer.id == "ndbc") {
+                  const stationId = graphic.attributes.STATION_ID;
+                  const stationName = graphic.attributes.NAME;
+                  const stationUrl = graphic.attributes.URL; 
+                  const stationType = graphic.attributes.TTYPE;
+                  const stationOwner = graphic.attributes.OWNER; 
+                  console.log(stationId, stationUrl);
+
+                  // use the station ID to query the NDBC for observations
+                  const url = 'https://www.ndbc.noaa.gov/get_observation.php?station=' + stationId +'&fmt=json';
+                  const encodedUrl = 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url);
+                  fetch(encodedUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                      ndbcModal.open = true;   
+                      console.log(data);                   
+                      if (data.observation.msg == null) {
+                        const airTemp = data.observation.data.airtemp.value;
+                        const lastUdated = data.observation.data.datetime.value;
+                        const dewPoint = data.observation.data.dewpoint.value;
+                        const meanWaveDir = data.observation.data.meanwavedir.value;
+                        const pressure = data.observation.data.pressure.value;
+                        const tide = data.observation.data.tide.value;
+                        const visibility = data.observation.data.visibility.value;
+                        const waterTemp = data.observation.data.watertemp.value;
+                        const waveHeight = data.observation.data.waveht.value;
+                        const windDIr = data.observation.data.winddir.value;
+                        const windGust = data.observation.data.windgust.value;
+                        const windSpeed = data.observation.data.windspeed.value;
+                        ndbcModal.heading = stationName + " (" + stationId + ")";
+
+                        console.log(airTemp, dewPoint);
+
+                         // Reference to the table body where rows will be inserted
+  const tableBody = document.querySelector("calcite-table");
+
+  // Helper function to create and append a row
+  function createRow(key, value, uom) {
+    // Create a new row
+    const row = document.createElement("calcite-table-row");
+
+    // Create the first cell for the key
+    const keyCell = document.createElement("calcite-table-cell");
+    keyCell.textContent = key;
+    row.appendChild(keyCell);
+
+    // Create the second cell for the value and uom
+    const valueCell = document.createElement("calcite-table-cell");
+    valueCell.setAttribute("alignment", "end");
+    valueCell.innerHTML = value !== null
+      ? `${value} ${uom ? `(${uom})` : ""}`
+      : "<i>No Data</i>";
+    row.appendChild(valueCell);
+
+    // Append the row to the table body
+    tableBody.appendChild(row);
+  }
+
+  // Iterate over the data.observation.data object and dynamically populate the table
+  const observationData = data.observation.data;
+  for (const key in observationData) {
+    if (observationData.hasOwnProperty(key)) {
+      const { value, uom } = observationData[key];
+      createRow(key, value, uom);
+    }
+  }
+                      } else if (data.observation.data.length == 0) {
+                        console.log("This buoy is receiving no data...");
+                      }
+                    });
+                }
+            }
+        });        
       });
     </script>
   </head>
@@ -76,5 +177,18 @@
   <body>
     <div id="viewDiv"></div>
     <span id="layerToggle" class="esri-widget"> <input type="checkbox" id="streetsLayer" /> Transportation </span>
+    <calcite-dialog width-scale="l" heading="Cookie notice" id="cameraModal" open placement="center" scale="l">   
+    <iframe src="" title="description" id="cameraFrame"></iframe>    
+    </calcite-dialog>
+    <calcite-dialog width-scale="s" heading="Cookie notice" id="ndbcModal" open placement="top-end" scale="s">   
+       <calcite-table caption="Weather Data Table">
+  <calcite-table-row slot="table-header">
+    <calcite-table-header heading="Parameter"></calcite-table-header>
+    <calcite-table-header heading="Value" alignment="end"></calcite-table-header>
+  </calcite-table-row>
+</calcite-table>
+    </calcite-dialog>
+
+
   </body>
 </html>
