@@ -84,6 +84,12 @@
         webmap.add(beachCameraLayer, 0);
         webmap.add(ndbcLayer, 0);
 
+        fetch("https://api.sofarocean.com/api/latest-data?spotterId=SPOT-30949C&includeSurfaceTempData=true&token=ddeec47c3c3f59bf757c6087630e6c")
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                    });
+
         // what the popup for a selected feature 
         reactiveUtils.watch(
           () => view.popup.selectedFeature,
