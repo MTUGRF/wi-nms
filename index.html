@@ -33,17 +33,38 @@
     </style>
 
     <script>
-      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils", "esri/Graphic"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils, Graphic) => {   
+      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils", "esri/Graphic", "esri/layers/GeoJSONLayer"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils, Graphic, GeoJSONLayer) => {   
 
       const cameraModal = document.getElementById("cameraModal"); 
       const ndbcModal = document.getElementById("ndbcModal"); 
 
       cameraModal.open = false;
       ndbcModal.open = false;    
-
+      // layer renderers
+       // Create a renderer for point features
+  const buoyRenderer = {
+    type: "simple", // Use a simple renderer
+    symbol: {
+      type: "simple-marker", // For points, use simple-marker
+      style: "circle", // Marker shape (e.g., circle, square, diamond)
+      color: "blue", // Fill color
+      size: "10px", // Size of the marker
+      outline: { // Outline for the marker
+        color: "white",
+        width: 1
+      }
+    }
+  }
         // Define a pop-up for beachCameraLayer
           const popupBeachCameras = {
             title: "{name}",
+            content:
+              '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
+          };
+
+          // Define a pop-up for beachCameraLayer
+          const popupSofar = {
+            title: "{spotterName}",
             content:
               '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
           };
@@ -82,6 +103,15 @@
           }
         });
 
+        const sofarLayer = new GeoJSONLayer({
+          url: "https://geospatialresearch.mtu.edu/nms-wi/sofar-latest/sofarbuoys.php",
+          copyright: "sofarocean",
+          id: "sofar",
+          renderer: buoyRenderer,
+          outFields: ["*"],
+          popupTemplate: popupSofar
+        });
+        
         const webmap = new WebMap({
           portalItem: { // autocasts as new PortalItem()
             id: "1143fa1055ac4afaac271f9c5ca33c48"
@@ -96,6 +126,7 @@
         webmap.add(beachCameraLayer, 0);
         webmap.add(ndbcLayer, 0);
         webmap.add(trafficLightLayer, 0);
+        webmap.add(sofarLayer, 0);
 
          // Query the feature layer when it loads
   trafficLightLayer.when(() => {
@@ -112,7 +143,7 @@
         const streamUrl = feature.attributes.stream_URL; // Get Stream_URL field
 
         // Fetch the JSON data from the endpoint
-        fetch("https://geospatialresearch.mtu.edu/trafficlights/" + streamUrl)
+        fetch("https://geospatialresearch.mtu.edu/nms-wi/trafficlights/" + streamUrl)
           .then((response) => response.json())
           .then((data) => {
             console.log(data);
@@ -214,6 +245,12 @@
                   document.getElementById("cameraFrame").src = cameraUrl;
                   cameraModal.open = true;
                   cameraModal.heading = cameraName;
+                } else if (graphic.layer.id == "sofar") {
+                  console.log("sofar",graphic);
+                  const buoyId = graphic.attributes.spotterId;
+                  const buoyName = graphic.attributes.spotterName;
+                  const lastUpdated = graphic.attributes.timestamp;
+                  const waveHeight = graphic.attributes.significantWaveHeight;
                 } else if (graphic.layer.id == "ndbc") {
                   const stationId = graphic.attributes.STATION_ID;
                   const stationName = graphic.attributes.NAME;
