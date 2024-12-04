@@ -31,7 +31,7 @@
     </style>
 
     <script>
-      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils) => {   
+      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils", "esri/Graphic"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils, Graphic) => {   
 
       const cameraModal = document.getElementById("cameraModal"); 
       const ndbcModal = document.getElementById("ndbcModal"); 
@@ -70,6 +70,16 @@
           popupTemplate: popupBeachCameras
         });
 
+        const trafficLightLayer = new FeatureLayer({
+          url: "https://services2.arcgis.com/RPhrOu9XQzI31xTa/arcgis/rest/services/Beach_Traffic_Lights/FeatureServer", 
+          outFields: ["*"], // Load all fields
+          visible: false,
+          popupTemplate: { // Basic popup setup; dynamic updates will override this
+            title: "{Name}",
+            content: "Loading..."
+          }
+        });
+
         const webmap = new WebMap({
           portalItem: { // autocasts as new PortalItem()
             id: "1143fa1055ac4afaac271f9c5ca33c48"
@@ -83,6 +93,105 @@
 
         webmap.add(beachCameraLayer, 0);
         webmap.add(ndbcLayer, 0);
+        webmap.add(trafficLightLayer, 0);
+
+         // Query the feature layer when it loads
+  trafficLightLayer.when(() => {
+    // Fetch all features
+    trafficLightLayer.queryFeatures({
+      where: "1=1", // Get all features
+      outFields: ["*"],
+      returnGeometry: true
+    }).then((result) => {
+      const features = result.features;
+
+      // Process each feature to query the endpoint
+      features.forEach((feature) => {
+        const streamUrl = feature.attributes.stream_URL; // Get Stream_URL field
+
+        // Fetch the JSON data from the endpoint
+        fetch("https://geospatialresearch.mtu.edu/trafficlights/" + streamUrl)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            const value = data.list[0].value;
+            const lastUpdate = data.list[0].timestamp;
+            const color = getColor(value);
+            const popupText = getPopupText(value);
+
+            // Update the symbol and popup content
+            const updatedGraphic = new Graphic({
+              geometry: feature.geometry,
+              attributes: feature.attributes,
+              symbol: {
+                type: "simple-marker",
+                color: color,
+                size: "12px",
+                outline: {
+                  color: "#000",
+                  width: 1
+                }
+              },
+              popupTemplate: {
+                title: "{Name}",
+                content: popupText + "<br><br> Last Updated: " + lastUpdate
+              }
+            });
+
+            // Add updated graphic to the map
+            view.graphics.add(updatedGraphic);
+          })
+          .catch((err) => console.error("Error fetching data:", err));
+           // Set default white light and "Unknown" status
+      const errorGraphic = new Graphic({
+        geometry: feature.geometry,
+        attributes: feature.attributes,
+        symbol: {
+          type: "simple-marker",
+          color: "white", // Default color for errors
+          size: "12px",
+          outline: {
+            color: "#000",
+            width: 1
+          }
+        },
+        popupTemplate: {
+          title: "{Name}",
+          content: "Unknown status"
+        }
+      });
+
+      // Add error graphic to the map
+      view.graphics.add(errorGraphic);
+      });
+    });
+  });
+
+  // Helper function to get color based on value
+  function getColor(value) {
+    switch (value) {
+      case "0": return "gray";
+      case "1": return "red";
+      case "2": return "yellow";
+      case "3": return "green";
+      case "6": return "darkred";
+      default: return "white"; // Fallback color
+    }
+  }
+
+  // Helper function to get popup text based on value
+  function getPopupText(value) {
+    switch (value) {
+      case "0": return "The Light is turned off";
+      case "1": return "Warning, High Winds and Waves";
+      case "2": return "Caution";
+      case "3": return "Safe to Swim";
+      case "6": return "Warning";
+      default: return "Unknown status";
+    }
+  }
+
+
 
         fetch("https://api.sofarocean.com/api/latest-data?spotterId=SPOT-30949C&includeSurfaceTempData=true&token=ddeec47c3c3f59bf757c6087630e6c")
                     .then(response => response.json())
