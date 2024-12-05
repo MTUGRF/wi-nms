@@ -63,7 +63,7 @@
           };
 
           // Define a pop-up for beachCameraLayer
-          const popupSofar = {
+          let sofarInfo = {
             title: "{spotterName}",
             content:
               '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
@@ -109,7 +109,7 @@
           id: "sofar",
           renderer: buoyRenderer,
           outFields: ["*"],
-          popupTemplate: popupSofar
+          popupTemplate: sofarInfo
         });
         
         const webmap = new WebMap({
@@ -215,11 +215,11 @@
   // Helper function to get popup text based on value
   function getPopupText(value) {
     switch (value) {
-      case "0": return "The Light is turned off";
-      case "1": return "Warning, High Winds and Waves";
-      case "2": return "Caution";
-      case "3": return "Safe to Swim";
-      case "6": return "Warning";
+      case "0": return "The Light is turned off.";
+      case "1": return "High Hazard: Strong currents and/or high waves and/or contamination.";
+      case "2": return "Medium Hazard: Moderate currents and/or waves and/or contamination.";
+      case "3": return "Calm conditions, exercise caution. ";
+      case "6": return "Water Closed: No Swimming Allowed. Water closed to the public.";
       default: return "Unknown status";
     }
   }
@@ -247,10 +247,33 @@
                   cameraModal.heading = cameraName;
                 } else if (graphic.layer.id == "sofar") {
                   console.log("sofar",graphic);
+
+                  // Attribute information for wave data are contained in the Geojson itself
                   const buoyId = graphic.attributes.spotterId;
                   const buoyName = graphic.attributes.spotterName;
                   const lastUpdated = graphic.attributes.timestamp;
                   const waveHeight = graphic.attributes.significantWaveHeight;
+                  const peakDir = graphic.attributes.peakDirection;
+                  const peakPeriod = graphic.attributes.peakPeriod;
+
+                  // Get the Temperature data as a separate call
+                   fetch("https://api.sofarocean.com/api/sensor-data?spotterId=SPOT-30363R&startDate=2024-12-01T07:00:00Z&endDate=2024-12-02T07:00:00&token=9b5b0e8377a2805157c883a7f9d7b3")
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("tempdata:",data);
+                                  
+
+                  // Create a template for the popup
+   sofarInfo = {
+            title: "{spotterName}",
+            content:
+              '<b>Last Updated: </b>' + lastUpdated +
+              '<b>Significant Wave Height: </b>' + waveHeight + '(m)' +
+              '<b>Peak Direction: </b>' + peakDir + '(deg)'
+          }
+
+sofarLayer.popupTemplate = sofarInfo;
+   }) 
                 } else if (graphic.layer.id == "ndbc") {
                   const stationId = graphic.attributes.STATION_ID;
                   const stationName = graphic.attributes.NAME;
