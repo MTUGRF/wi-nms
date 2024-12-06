@@ -3,8 +3,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <title>Wisconsin National Marine Sanctuary Web Map</title>
-    <script type="module" src="https://js.arcgis.com/calcite-components/2.13.2/calcite.esm.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/2.13.2/calcite.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.31/"></script>
 
@@ -35,11 +35,11 @@
     <script>
       require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils", "esri/Graphic", "esri/layers/GeoJSONLayer"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils, Graphic, GeoJSONLayer) => {   
 
-      const cameraModal = document.getElementById("cameraModal"); 
-      const ndbcModal = document.getElementById("ndbcModal"); 
+      const cameraModal = new bootstrap.Modal('#cameraModal', {
+        keyboard: false
+      }) 
 
-      cameraModal.open = false;
-      ndbcModal.open = false;    
+          
       // layer renderers
        // Create a renderer for point features
   const buoyRenderer = {
@@ -271,9 +271,9 @@
                   const cameraName = graphic.attributes.name;
                   const cameraUrl = graphic.attributes.url;
                   console.log(cameraUrl);
-                  document.getElementById("cameraFrame").src = cameraUrl;
-                  cameraModal.open = true;
-                  cameraModal.heading = cameraName;
+                  document.getElementById("cameraFrame").src = cameraUrl; 
+                  document.getElementById("cameraTitle").textContent = cameraName;   
+                  cameraModal.show();               
                 } else if (graphic.layer.id == "sofar") {
                   console.log("sofar",graphic);
 
@@ -333,7 +333,7 @@
                   fetch(encodedUrl)
                     .then(response => response.json())
                     .then(data => {
-                      ndbcModal.open = true;   
+                        
                       console.log(data);                   
                       if (data.observation.msg == null) {
                         const airTemp = data.observation.data.airtemp.value;
@@ -346,10 +346,11 @@
                         const visibility = data.observation.data.visibility.value;
                         const waterTemp = data.observation.data.watertemp.value;
                         const waveHeight = data.observation.data.waveht.value;
-                        const windDIr = data.observation.data.winddir.value;
+                        const windDir = data.observation.data.winddir.value;
                         const windGust = data.observation.data.windgust.value;
                         const windSpeed = data.observation.data.windspeed.value;
-                        ndbcModal.heading = stationName + " (" + stationId + ")";
+                        
+
 
                         // Create a template for the popup
                         popupStations = {
@@ -366,7 +367,7 @@
                             '<b>Pressure Tendency: </b>' + pressureTend + '<br>' + 
                             '<b>Tide: </b>' + tide + ' (ft)<br>' +     
                             '<b>Visibility: </b>' + visibility + ' (nmi)<br>' + 
-                            '<b>Water Temperature: </b>' + watertemp + ' (°F)<br>' +
+                            '<b>Water Temperature: </b>' + waterTemp + ' (°F)<br>' +
                             '<b>Wind Speed: </b>' + windSpeed + ' (kt)<br>' + 
                             '<b>Wind Gust: </b>' + windGust + ' (kt)<br>' +  
                             '<b>Wind Direction: </b>' + windDir +  data.observation.data.winddir.text + ' (deg)<br>' 
@@ -397,18 +398,18 @@
   <body>
     <div id="viewDiv"></div>
     <span id="layerToggle" class="esri-widget"> <input type="checkbox" id="streetsLayer" /> Transportation </span>
-    <calcite-dialog width-scale="l" heading="Cookie notice" id="cameraModal" open placement="center" scale="l">   
-    <iframe src="" title="description" id="cameraFrame" height="800px"></iframe>    
-    </calcite-dialog>
-    <calcite-dialog width-scale="s" heading="Cookie notice" id="ndbcModal" open placement="top-end" scale="s">   
-       <calcite-table caption="Weather Data Table">
-  <calcite-table-row slot="table-header">
-    <calcite-table-header heading="Parameter"></calcite-table-header>
-    <calcite-table-header heading="Value" alignment="end"></calcite-table-header>
-  </calcite-table-row>
-</calcite-table>
-    </calcite-dialog>
-
-
+    <div class="modal" tabindex="-1" id="cameraModal">
+  <div class="modal-dialog .modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cameraTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <iframe src="" title="description" id="cameraFrame" width="100%"></iframe> 
+      </div>      
+    </div>
+  </div>
+</div>
   </body>
 </html>
