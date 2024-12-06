@@ -70,7 +70,7 @@
           };
 
           // Define a pop-up for beachCameraLayer
-          const popupStations = {
+          let popupStations = {
             title: "{name}",
             content:
               '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
@@ -127,6 +127,35 @@
         webmap.add(ndbcLayer, 0);
         webmap.add(trafficLightLayer, 0);
         webmap.add(sofarLayer, 0);
+
+
+   /*       // Add a click event listener to the map view
+  view.on("click", function(event) {
+    // Get map coordinates (longitude and latitude) from the clicked point
+    const lat = event.mapPoint.latitude.toFixed(6); 
+    const lon = event.mapPoint.longitude.toFixed(6); 
+    // query NOAA weather API for the current forcast for this area
+    // forecast for Marine zones not yet supported. 
+     fetch("https://api.weather.gov/points/" + lat + "," + lon)
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data.properties);
+
+             fetch("https://marine.weather.gov/MapClick.php?lat=44.0997&lon=-87.6136")
+              .then((response) => response.text())
+              .then((data) => {
+                console.log(data);
+            });
+          });
+
+   /* // Set the popup content and location
+    view.popup.open({
+      // Popup content
+      title: "Coordinates",
+      content: `Latitude: ${lat}<br>Longitude: ${lon}`,
+      location: event.mapPoint // Location of the popup
+    });
+  });*/
 
          // Query the feature layer when it loads
   trafficLightLayer.when(() => {
@@ -251,7 +280,7 @@
                   // Attribute information for wave data are contained in the Geojson itself
                   const buoyId = graphic.attributes.spotterId;
                   const buoyName = graphic.attributes.spotterName;
-                  const lastUpdated = graphic.attributes.timestamp;
+                  const lastUpdated = new Date(graphic.attributes.timestamp);
                   const waveHeight = graphic.attributes.significantWaveHeight;
                   const peakDir = graphic.attributes.peakDirection;
                   const peakPeriod = graphic.attributes.peakPeriod;
@@ -261,19 +290,35 @@
                     .then(response => response.json())
                     .then(data => {
                         console.log("tempdata:",data);
-                                  
+                        const surfWaterTemp = data.data[0].value;
+                        const Water15Temp = data.data[1].value;
+                        const Water25Temp = data.data[2].value;
+                        const bPress = data.data[3].value;
+                        const Water35Temp = data.data[4].value;
+                        const bottomPress = data.data[5].value;
+                        const tempUpdated = new Date(data.data[0].timestamp);                                  
 
-                  // Create a template for the popup
-   sofarInfo = {
-            title: "{spotterName}",
-            content:
-              '<b>Last Updated: </b>' + lastUpdated +
-              '<b>Significant Wave Height: </b>' + waveHeight + '(m)' +
-              '<b>Peak Direction: </b>' + peakDir + '(deg)'
-          }
+                        // Create a template for the popup
+                        sofarInfo = {
+                          title: "{spotterName}",
+                          content:
+                            '<h5>Wave Information</h5>' +
+                            '<b>Last Updated: </b>' + lastUpdated + '<br><br>' +
+                            '<b>Significant Wave Height: </b>' + waveHeight + ' (m)<br><br>' +
+                            '<b>Peak Direction: </b>' + peakDir + ' (deg)<br>' +
+                            '<b>Peak Period: </b>' + peakPeriod + '<br>' +
+                            '<h5>Water Temperature Information</h5>' +
+                            '<b>Surface Water Temperature (1 meter):</b> ' + surfWaterTemp.toFixed(2) + " °C<br><br>" +
+                            '<b>Water Temperature (15 meters): ' + Water15Temp.toFixed(2) + " °C<br><br>" +
+                            '<b>Water Temperature (25 meters): ' + Water25Temp.toFixed(2) + " °C<br><br>" +
+                            '<b>Water Temperature (35 meters): ' + Water35Temp.toFixed(2) + " °C<br><br>" +
+                            '<b>Barometric Pressure: ' +  bPress + ' μbar<br><br>' +
+                            '<b>Lake Bottom Pressure: ' +  bottomPress + ' μbar<br><br>' +
+                            '<b>Last Updated: ' + tempUpdated
+                        }
 
-sofarLayer.popupTemplate = sofarInfo;
-   }) 
+                        sofarLayer.popupTemplate = sofarInfo;
+                 }) 
                 } else if (graphic.layer.id == "ndbc") {
                   const stationId = graphic.attributes.STATION_ID;
                   const stationName = graphic.attributes.NAME;
@@ -292,10 +337,11 @@ sofarLayer.popupTemplate = sofarInfo;
                       console.log(data);                   
                       if (data.observation.msg == null) {
                         const airTemp = data.observation.data.airtemp.value;
-                        const lastUdated = data.observation.data.datetime.value;
+                        const lastUpdated = data.observation.data.datetime.iso8601;
                         const dewPoint = data.observation.data.dewpoint.value;
                         const meanWaveDir = data.observation.data.meanwavedir.value;
                         const pressure = data.observation.data.pressure.value;
+                        const pressureTend = data.observation.data.pressuretendency.value;
                         const tide = data.observation.data.tide.value;
                         const visibility = data.observation.data.visibility.value;
                         const waterTemp = data.observation.data.watertemp.value;
@@ -305,43 +351,40 @@ sofarLayer.popupTemplate = sofarInfo;
                         const windSpeed = data.observation.data.windspeed.value;
                         ndbcModal.heading = stationName + " (" + stationId + ")";
 
-                        console.log(airTemp, dewPoint);
+                        // Create a template for the popup
+                        popupStations = {
+                          title: stationName,
+                          content:                            
+                            '<b>Station Type: </b>' + stationType + '<br><br>' +
+                            '<b>Station Owner: </b>' + stationOwner + '<br><br>' +
+                            '<b>Last Updated: </b>' + lastUpdated + '<br><br>' +
+                            '<b>Air temperature: </b>' + airTemp + ' (°F)<br><br>' +
+                            '<b>Dew Point: </b>' + dewPoint + ' (°F)<br>' +                            
+                            '<b>Mean Wave Direction</b> ' + meanWaveDir + data.observation.data.meanwavedir.text + " (def) <br><br>" +  
+                            '<b>Wave Height: </b>' + waveHeight + ' (ft)<br>' +                             
+                            '<b>Pressure: </b>' + pressure + ' (in)<br>' +  
+                            '<b>Pressure Tendency: </b>' + pressureTend + '<br>' + 
+                            '<b>Tide: </b>' + tide + ' (ft)<br>' +     
+                            '<b>Visibility: </b>' + visibility + ' (nmi)<br>' + 
+                            '<b>Water Temperature: </b>' + watertemp + ' (°F)<br>' +
+                            '<b>Wind Speed: </b>' + windSpeed + ' (kt)<br>' + 
+                            '<b>Wind Gust: </b>' + windGust + ' (kt)<br>' +  
+                            '<b>Wind Direction: </b>' + windDir +  data.observation.data.winddir.text + ' (deg)<br>' 
 
-                         // Reference to the table body where rows will be inserted
-  const tableBody = document.querySelector("calcite-table");
+                        }
 
-  // Helper function to create and append a row
-  function createRow(key, value, uom) {
-    // Create a new row
-    const row = document.createElement("calcite-table-row");
+                        ndbcLayer.popupTemplate = popupStations;
+                      } else if (data.observation.msg == "No data") {
+                        // Create a template for the popup
+                        popupStations = {
+                          title: stationName,
+                          content:                            
+                            '<b>Station Type: </b>' + stationType + '<br><br>' +
+                            '<b>Station Owner: </b>' + stationOwner + '<br><br>' +
+                            'This station is currently not sending any data'
+                        }
 
-    // Create the first cell for the key
-    const keyCell = document.createElement("calcite-table-cell");
-    keyCell.textContent = key;
-    row.appendChild(keyCell);
-
-    // Create the second cell for the value and uom
-    const valueCell = document.createElement("calcite-table-cell");
-    valueCell.setAttribute("alignment", "end");
-    valueCell.innerHTML = value !== null
-      ? `${value} ${uom ? `(${uom})` : ""}`
-      : "<i>No Data</i>";
-    row.appendChild(valueCell);
-
-    // Append the row to the table body
-    tableBody.appendChild(row);
-  }
-
-  // Iterate over the data.observation.data object and dynamically populate the table
-  const observationData = data.observation.data;
-  for (const key in observationData) {
-    if (observationData.hasOwnProperty(key)) {
-      const { value, uom } = observationData[key];
-      createRow(key, value, uom);
-    }
-  }
-                      } else if (data.observation.data.length == 0) {
-                        console.log("This buoy is receiving no data...");
+                        ndbcLayer.popupTemplate = popupStations;
                       }
                     });
                 }
