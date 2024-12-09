@@ -277,47 +277,115 @@
                 } else if (graphic.layer.id == "sofar") {
                   console.log("sofar",graphic);
 
-                  // Attribute information for wave data are contained in the Geojson itself
                   const buoyId = graphic.attributes.spotterId;
-                  const buoyName = graphic.attributes.spotterName;
-                  const lastUpdated = new Date(graphic.attributes.timestamp);
-                  const waveHeight = graphic.attributes.significantWaveHeight;
-                  const peakDir = graphic.attributes.peakDirection;
-                  const peakPeriod = graphic.attributes.peakPeriod;
+const buoyName = graphic.attributes.spotterName;
+const lastUpdated = graphic.attributes.timestamp
+    ? new Date(graphic.attributes.timestamp).toLocaleString()
+    : "No Data";
+const waveHeight = graphic.attributes.significantWaveHeight ?? "No Data";
+const peakDir = graphic.attributes.peakDirection ?? "No Data";
+const peakPeriod = graphic.attributes.peakPeriod ?? "No Data";
 
-                  // Get the Temperature data as a separate call
-                   fetch("https://api.sofarocean.com/api/sensor-data?spotterId=SPOT-30363R&startDate=2024-12-01T07:00:00Z&endDate=2024-12-02T07:00:00&token=9b5b0e8377a2805157c883a7f9d7b3")
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log("tempdata:",data);
-                        const surfWaterTemp = data.data[0].value;
-                        const Water15Temp = data.data[1].value;
-                        const Water25Temp = data.data[2].value;
-                        const bPress = data.data[3].value;
-                        const Water35Temp = data.data[4].value;
-                        const bottomPress = data.data[5].value;
-                        const tempUpdated = new Date(data.data[0].timestamp);                                  
+// Fetch temperature data from the API
+fetch("https://api.sofarocean.com/api/sensor-data?spotterId=SPOT-30363R&startDate=2024-12-01T07:00:00Z&endDate=2024-12-02T07:00:00&token=9b5b0e8377a2805157c883a7f9d7b3")
+    .then(response => response.json())
+    .then(data => {
+        console.log("tempdata:", data);
 
-                        // Create a template for the popup
-                        sofarInfo = {
-                          title: "{spotterName}",
-                          content:
-                            '<h5>Wave Information</h5>' +
-                            '<b>Last Updated: </b>' + lastUpdated + '<br><br>' +
-                            '<b>Significant Wave Height: </b>' + waveHeight + ' (m)<br><br>' +
-                            '<b>Peak Direction: </b>' + peakDir + ' (deg)<br>' +
-                            '<b>Peak Period: </b>' + peakPeriod + '<br>' +
-                            '<h5>Water Temperature Information</h5>' +
-                            '<b>Surface Water Temperature (1 meter):</b> ' + surfWaterTemp.toFixed(2) + " °C<br><br>" +
-                            '<b>Water Temperature (15 meters): ' + Water15Temp.toFixed(2) + " °C<br><br>" +
-                            '<b>Water Temperature (25 meters): ' + Water25Temp.toFixed(2) + " °C<br><br>" +
-                            '<b>Water Temperature (35 meters): ' + Water35Temp.toFixed(2) + " °C<br><br>" +
-                            '<b>Barometric Pressure: ' +  bPress + ' μbar<br><br>' +
-                            '<b>Lake Bottom Pressure: ' +  bottomPress + ' μbar<br><br>' +
-                            '<b>Last Updated: ' + tempUpdated
-                        }
+        // Helper function to handle missing data
+        const getValueOrNoData = (value, unit = "") => {
+            return value !== null && value !== undefined ? `${value.toFixed(2)} ${unit}` : "No Data";
+        };
 
-                        sofarLayer.popupTemplate = sofarInfo;
+        // Extract temperature and pressure data
+        const surfWaterTemp = getValueOrNoData(data.data[0]?.value, "°C");
+        const Water15Temp = getValueOrNoData(data.data[1]?.value, "°C");
+        const Water25Temp = getValueOrNoData(data.data[2]?.value, "°C");
+        const bPress = getValueOrNoData(data.data[3]?.value, "μbar");
+        const Water35Temp = getValueOrNoData(data.data[4]?.value, "°C");
+        const bottomPress = getValueOrNoData(data.data[5]?.value, "μbar");
+        const tempUpdated = data.data[0]?.timestamp
+            ? new Date(data.data[0].timestamp).toLocaleString()
+            : "No Data";
+
+        // Create the popup content using HTML tables
+        const popupContent = `
+            <h5>Wave Information</h5>
+            <table style="width:100%; border-collapse: collapse; text-align: left; margin-bottom: 15px;">
+                <tr>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Attribute</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Value</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Buoy ID</td>
+                    <td style="padding: 8px;">${buoyId}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Buoy Name</td>
+                    <td style="padding: 8px;">${buoyName}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Last Updated</td>
+                    <td style="padding: 8px;">${lastUpdated}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Significant Wave Height</td>
+                    <td style="padding: 8px;">${waveHeight} m</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Peak Direction</td>
+                    <td style="padding: 8px;">${peakDir}°</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Peak Period</td>
+                    <td style="padding: 8px;">${peakPeriod} s</td>
+                </tr>
+            </table>
+
+            <h5>Water Temperature and Pressure Information</h5>
+            <table style="width:100%; border-collapse: collapse; text-align: left;">
+                <tr>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Attribute</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Value</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Surface Water Temperature (1 meter)</td>
+                    <td style="padding: 8px;">${surfWaterTemp}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Water Temperature (15 meters)</td>
+                    <td style="padding: 8px;">${Water15Temp}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Water Temperature (25 meters)</td>
+                    <td style="padding: 8px;">${Water25Temp}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Water Temperature (35 meters)</td>
+                    <td style="padding: 8px;">${Water35Temp}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Barometric Pressure</td>
+                    <td style="padding: 8px;">${bPress}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Lake Bottom Pressure</td>
+                    <td style="padding: 8px;">${bottomPress}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Temperature Data Last Updated</td>
+                    <td style="padding: 8px;">${tempUpdated}</td>
+                </tr>
+            </table>
+        `;
+
+        // Create a template for the popup
+        sofarInfo = {
+            title: "{spotterName}",
+            content: popupContent
+        };
+
+        sofarLayer.popupTemplate = sofarInfo;
                  }) 
                 } else if (graphic.layer.id == "ndbc") {
                   const stationId = graphic.attributes.STATION_ID;
