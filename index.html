@@ -389,10 +389,10 @@ fetch("https://api.sofarocean.com/api/sensor-data?spotterId=SPOT-30363R&startDat
                  }) 
                 } else if (graphic.layer.id == "ndbc") {
                   const stationId = graphic.attributes.STATION_ID;
-                  const stationName = graphic.attributes.NAME;
-                  const stationUrl = graphic.attributes.URL; 
-                  const stationType = graphic.attributes.TTYPE;
-                  const stationOwner = graphic.attributes.OWNER; 
+const stationName = graphic.attributes.NAME;
+const stationUrl = graphic.attributes.URL;
+const stationType = graphic.attributes.TTYPE ?? "No Data";
+const stationOwner = graphic.attributes.OWNER ?? "No Data";
                   console.log(stationId, stationUrl);
 
                   // use the station ID to query the NDBC for observations
@@ -404,45 +404,132 @@ fetch("https://api.sofarocean.com/api/sensor-data?spotterId=SPOT-30363R&startDat
                         
                       console.log(data);                   
                       if (data.observation.msg == null) {
-                        const airTemp = data.observation.data.airtemp.value;
-                        const lastUpdated = data.observation.data.datetime.iso8601;
-                        const dewPoint = data.observation.data.dewpoint.value;
-                        const meanWaveDir = data.observation.data.meanwavedir.value;
-                        const pressure = data.observation.data.pressure.value;
-                        const pressureTend = data.observation.data.pressuretendency.value;
-                        const tide = data.observation.data.tide.value;
-                        const visibility = data.observation.data.visibility.value;
-                        const waterTemp = data.observation.data.watertemp.value;
-                        const waveHeight = data.observation.data.waveht.value;
-                        const windDir = data.observation.data.winddir.value;
-                        const windGust = data.observation.data.windgust.value;
-                        const windSpeed = data.observation.data.windspeed.value;
-                        
+                        // Helper function to handle missing data
+       const getValueOrNoData = (value, unit = "") => {
+    // Check if the value is a valid number
+    if (typeof value === "number" && !isNaN(value)) {
+        return `${value.toFixed(2)} ${unit}`; // Format the number with two decimal places
+    }
+    return "No Data"; // Return "No Data" for null, undefined, or non-numeric values
+};
 
+     
+        const lastUpdated = data?.observation?.data?.datetime?.iso8601
+            ? new Date(data.observation.data.datetime.iso8601).toLocaleString()
+            : "No Data";
+        const dewPoint = getValueOrNoData(data?.observation?.data?.dewpoint?.value, "°F");
+        const airTemp = getValueOrNoData(data?.observation?.data?.airtemp?.value, "°F");
+        const meanWaveDir = getValueOrNoData(data?.observation?.data?.meanwavedir?.value, "°");
+        const meanWaveDirText = data?.observation?.data?.meanwavedir?.text ?? "No Data";
+        const pressure = getValueOrNoData(data?.observation?.data?.pressure?.value, "in");
+        const pressureTend = data?.observation?.data?.pressuretendency?.value ?? "No Data";
+        const tide = getValueOrNoData(data?.observation?.data?.tide?.value, "ft");
+        const visibility = getValueOrNoData(data?.observation?.data?.visibility?.value, "nmi");
+        const waterTemp = getValueOrNoData(data?.observation?.data?.watertemp?.value, "°F");
+        const waveHeight = getValueOrNoData(data?.observation?.data?.waveht?.value, "ft");
+        const windDir = getValueOrNoData(data?.observation?.data?.winddir?.value, "°");
+        const windDirText = data?.observation?.data?.winddir?.text ?? "No Data";
+        const windGust = getValueOrNoData(data?.observation?.data?.windgust?.value, "kt");
+        const windSpeed = getValueOrNoData(data?.observation?.data?.windspeed?.value, "kt");
 
-                        // Create a template for the popup
-                        popupStations = {
-                          title: stationName,
-                          content:                            
-                            '<b>Station Type: </b>' + stationType + '<br><br>' +
-                            '<b>Station Owner: </b>' + stationOwner + '<br><br>' +
-                            '<b>Last Updated: </b>' + lastUpdated + '<br><br>' +
-                            '<b>Air temperature: </b>' + airTemp + ' (°F)<br><br>' +
-                            '<b>Dew Point: </b>' + dewPoint + ' (°F)<br>' +                            
-                            '<b>Mean Wave Direction</b> ' + meanWaveDir + data.observation.data.meanwavedir.text + " (def) <br><br>" +  
-                            '<b>Wave Height: </b>' + waveHeight + ' (ft)<br>' +                             
-                            '<b>Pressure: </b>' + pressure + ' (in)<br>' +  
-                            '<b>Pressure Tendency: </b>' + pressureTend + '<br>' + 
-                            '<b>Tide: </b>' + tide + ' (ft)<br>' +     
-                            '<b>Visibility: </b>' + visibility + ' (nmi)<br>' + 
-                            '<b>Water Temperature: </b>' + waterTemp + ' (°F)<br>' +
-                            '<b>Wind Speed: </b>' + windSpeed + ' (kt)<br>' + 
-                            '<b>Wind Gust: </b>' + windGust + ' (kt)<br>' +  
-                            '<b>Wind Direction: </b>' + windDir +  data.observation.data.winddir.text + ' (deg)<br>' 
+        // Create the popup content using HTML tables
+        const popupContent = `
+            <h5>Station Information</h5>
+            <table style="width:100%; border-collapse: collapse; text-align: left; margin-bottom: 15px;">
+                <tr>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Attribute</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Value</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Station ID</td>
+                    <td style="padding: 8px;">${stationId}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Station Name</td>
+                    <td style="padding: 8px;">${stationName}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Station Type</td>
+                    <td style="padding: 8px;">${stationType}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Station Owner</td>
+                    <td style="padding: 8px;">${stationOwner}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Station URL</td>
+                    <td style="padding: 8px;"><a href="${stationUrl}" target="_blank">${stationUrl}</a></td>
+                </tr>
+            </table>
 
-                        }
+            <h5>Observation Data</h5>
+            <table style="width:100%; border-collapse: collapse; text-align: left;">
+                <tr>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Attribute</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 8px;">Value</th>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Last Updated</td>
+                    <td style="padding: 8px;">${lastUpdated}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Air Temperature</td>
+                    <td style="padding: 8px;">${airTemp}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Dew Point</td>
+                    <td style="padding: 8px;">${dewPoint}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Mean Wave Direction</td>
+                    <td style="padding: 8px;">${meanWaveDir} (${meanWaveDirText})</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Wave Height</td>
+                    <td style="padding: 8px;">${waveHeight}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Pressure</td>
+                    <td style="padding: 8px;">${pressure}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Pressure Tendency</td>
+                    <td style="padding: 8px;">${pressureTend}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Tide</td>
+                    <td style="padding: 8px;">${tide}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Visibility</td>
+                    <td style="padding: 8px;">${visibility}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Water Temperature</td>
+                    <td style="padding: 8px;">${waterTemp}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Wind Speed</td>
+                    <td style="padding: 8px;">${windSpeed}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Wind Gust</td>
+                    <td style="padding: 8px;">${windGust}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;">Wind Direction</td>
+                    <td style="padding: 8px;">${windDir} (${windDirText})</td>
+                </tr>
+            </table>
+        `;
 
-                        ndbcLayer.popupTemplate = popupStations;
+        // Create a template for the popup
+        popupStations = {
+            title: stationName,
+            content: popupContent
+        };
+
+        ndbcLayer.popupTemplate = popupStations;
                       } else if (data.observation.msg == "No data") {
                         // Create a template for the popup
                         popupStations = {
