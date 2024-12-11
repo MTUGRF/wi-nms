@@ -206,18 +206,18 @@
 
          // get the layers on the existing web map
         let boundary = webmap.allLayers.find(function(layer) {          
-            return layer.title === "WSCNMS py";
+            return layer.title === "WSCNMS Boundary";
           })
 
         let zones = webmap.allLayers.find(function(layer) {          
-            return layer.title === "NWS Coastal Marine Zone Forecast";
+            return layer.title === "NWS Coastal Marine Forecast Zones";
           })
 
         let hillshade = webmap.allLayers.find(function(layer) {          
-            return layer.title === "WSCNMS hillshade";
+            return layer.title === "WSCNMS Hillshade";
           })
         let bathy = webmap.allLayers.find(function(layer) {          
-            return layer.title === "WSCNMS Bathy combined";
+            return layer.title === "WSCNMS Bathymetry";
           })
 
         webmap.add(beachCameraLayer, 9999);
@@ -664,7 +664,7 @@ view.ui.add(layerListExpand, "top-left");
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <iframe src="" title="description" id="cameraFrame" width="100%" height="100%"></iframe> 
+        <img src="" title="description" id="cameraFrame" width="100%" height="auto"></img> 
       </div>      
     </div>
   </div>
