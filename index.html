@@ -101,20 +101,29 @@
               '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
           };
 
-          // Define a pop-up for beachCameraLayer
+          // Define a pop-up for sofarLayer
           let sofarInfo = {
             title: "{spotterName}",
             content:
               '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
           };
 
-          // Define a pop-up for beachCameraLayer
+          // Define a pop-up for popupStationsLayer
           let popupStations = {
             title: "{name}",
             content:
               '<iframe src="https://www.google.com" title="{name}" height="200" width="300"></iframe>'
           };
 
+          // Define a pop-up for sitesLayer
+          let popupSites = {
+            title: "{Site}",
+            content:
+              '<b>Site Name: </b>{Site}<br><b>Latitude: </b>{Lat}<br><b>Longitude: </b>{Long}<br><b>Easting: </b>{Easting}<br><b>Northing: </b>{Northing}<br>'
+          };
+
+
+          // create the layers for in the app
          const ndbcLayer = new FeatureLayer({
           url: "https://services2.arcgis.com/RPhrOu9XQzI31xTa/arcgis/rest/services/WI_Marine/FeatureServer",
           // This property can be used to uniquely identify the layer
@@ -139,7 +148,7 @@
           visible: true,
           outFields: ["*"],
           renderer: sitesRenderer,
-          //popupTemplate: popupBeachCameras
+          popupTemplate: popupSites
         });
 
 
@@ -160,8 +169,8 @@
           renderer: buoyRenderer,
           outFields: ["*"],
           popupTemplate: sofarInfo
-        });
-        
+        });        
+
         const webmap = new WebMap({
           portalItem: { // autocasts as new PortalItem()
             id: "1143fa1055ac4afaac271f9c5ca33c48"
@@ -173,11 +182,38 @@
           map: webmap          
         });
 
-        webmap.add(beachCameraLayer, 99999999999999999);
-        webmap.add(ndbcLayer, 0000);
-        webmap.add(trafficLightLayer, 000);
-        webmap.add(sofarLayer, 000);
-        webmap.add(sitesLayer, 000);
+       
+        
+        
+        view.when(function() {
+
+
+         // get the layers on the existing web map
+        let boundary = webmap.allLayers.find(function(layer) {          
+            return layer.title === "WSCNMS py";
+          })
+
+        let zones = webmap.allLayers.find(function(layer) {          
+            return layer.title === "NWS Coastal Marine Zone Forecast";
+          })
+
+        let hillshade = webmap.allLayers.find(function(layer) {          
+            return layer.title === "WSCNMS hillshade";
+          })
+        let bathy = webmap.allLayers.find(function(layer) {          
+            return layer.title === "WSCNMS Bathy combined";
+          })
+
+        webmap.add(beachCameraLayer, 9999);
+        webmap.add(ndbcLayer, 5);
+        webmap.add(trafficLightLayer, 0);
+        webmap.add(sofarLayer, 5);
+        webmap.add(sitesLayer, 3);
+        webmap.reorder(boundary, 0);
+        webmap.reorder(zones, 2);
+        webmap.reorder(hillshade, 0);
+        webmap.reorder(bathy, 0);
+        
 
 
    /*       // Add a click event listener to the map view
@@ -575,6 +611,7 @@
                     });
                 }
             }
+        });
         });        
       });
     </script>
