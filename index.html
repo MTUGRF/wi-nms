@@ -19,8 +19,8 @@
       }
 
       #layerToggle {
-        top: 20px;
-        right: 20px;
+        top: 70px;
+        right: 15px;
         position: absolute;
         z-index: 99;
         background-color: white;
@@ -55,7 +55,7 @@
     </style>
 
     <script>
-      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils", "esri/Graphic", "esri/layers/GeoJSONLayer"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils, Graphic, GeoJSONLayer) => {   
+      require(["esri/WebMap", "esri/views/MapView", "esri/layers/TileLayer", "esri/layers/FeatureLayer", "esri/core/reactiveUtils", "esri/Graphic", "esri/layers/GeoJSONLayer", "esri/widgets/Expand", "esri/widgets/LayerList"], (WebMap, MapView, TileLayer, FeatureLayer, reactiveUtils, Graphic, GeoJSONLayer, Expand, LayerList) => {   
 
       const cameraModal = new bootstrap.Modal('#cameraModal', {
         keyboard: false
@@ -80,6 +80,16 @@
          symbol: {
             type: "picture-marker",
             url: 'assets/stationmarker.svg',
+            width: 20,
+            height: 20
+         }
+        }
+
+        const stationRenderer = {
+         type: "simple",
+         symbol: {
+            type: "picture-marker",
+            url: 'assets/station2.svg',
             width: 20,
             height: 20
          }
@@ -130,7 +140,9 @@
           id: "ndbc",
           visible: true,
           outFields: ["*"],
-          popupTemplate: popupStations
+          renderer: buoyRenderer,
+          popupTemplate: popupStations,
+          listMode: "hide"
         });
 
         const beachCameraLayer = new FeatureLayer({
@@ -139,7 +151,8 @@
           visible: true,
           outFields: ["*"],
           renderer: camRenderer,
-          popupTemplate: popupBeachCameras
+          popupTemplate: popupBeachCameras,
+          listMode: "hide"
         });
 
         const sitesLayer = new FeatureLayer({
@@ -148,7 +161,8 @@
           visible: true,
           outFields: ["*"],
           renderer: sitesRenderer,
-          popupTemplate: popupSites
+          popupTemplate: popupSites,
+          listMode: "hide"
         });
 
 
@@ -156,6 +170,7 @@
           url: "https://services2.arcgis.com/RPhrOu9XQzI31xTa/arcgis/rest/services/Beach_Traffic_Lights/FeatureServer", 
           outFields: ["*"], // Load all fields
           visible: false,
+          listMode: "hide",
           popupTemplate: { // Basic popup setup; dynamic updates will override this
             title: "{Name}",
             content: "Loading..."
@@ -168,7 +183,8 @@
           id: "sofar",
           renderer: buoyRenderer,
           outFields: ["*"],
-          popupTemplate: sofarInfo
+          popupTemplate: sofarInfo,
+          listMode: "hide"
         });        
 
         const webmap = new WebMap({
@@ -209,10 +225,10 @@
         webmap.add(trafficLightLayer, 0);
         webmap.add(sofarLayer, 5);
         webmap.add(sitesLayer, 3);
-        webmap.reorder(boundary, 0);
-        webmap.reorder(zones, 2);
-        webmap.reorder(hillshade, 0);
-        webmap.reorder(bathy, 0);
+        webmap.reorder(boundary, 2);
+        webmap.reorder(zones, 1);
+        webmap.reorder(hillshade, 1);
+        webmap.reorder(bathy, 1);
         
 
 
@@ -243,6 +259,18 @@
       location: event.mapPoint // Location of the popup
     });
   });*/
+        // LayerList
+const layerList = new LayerList({
+  container: document.createElement("div"),
+  view: view
+});
+const layerListExpand = new Expand({
+  expandIcon: "layers",  // see https://developers.arcgis.com/calcite-design-system/icons/
+  // expandTooltip: "Expand LayerList", // optional, defaults to "Expand" for English locale
+  view: view,
+  content: layerList
+});
+view.ui.add(layerListExpand, "top-left");
 
          // Query the feature layer when it loads
   trafficLightLayer.when(() => {
@@ -627,8 +655,7 @@
     </a>
   </div>
 </nav>
-    <div id="viewDiv"></div>
-    <span id="layerToggle" class="esri-widget"> <input type="checkbox" id="streetsLayer" /> Forecast Zones </span>
+    <div id="viewDiv"></div>    
     <div class="modal" tabindex="-1" id="cameraModal">
   <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
