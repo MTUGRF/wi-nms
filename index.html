@@ -508,25 +508,23 @@ view.ui.add(layerListExpand, "top-left");
                         
                       console.log(data);                   
                       if (data.observation.msg == null) {
-                        const airTemp = data.observation.data.airtemp.value;
-                        const lastUpdated = data.observation.data.datetime.iso8601;
-                        const dewPoint = data.observation.data.dewpoint.value;
-                        const meanWaveDir = data.observation.data.meanwavedir.value;
-                        const meanWaveDirText = data.observation.data.meanwavedir.text;
-                        const pressure = data.observation.data.pressure.value;
-                        const pressureTend = data.observation.data.pressuretendency.value;
-                        const tide = data.observation.data.tide.value;
-                        const visibility = data.observation.data.visibility.value;
-                        const waterTemp = data.observation.data.watertemp.value;
-                        const waveHeight = data.observation.data.waveht.value;
-                        const windDir = data.observation.data.winddir.value;
-                        const windDirText = data.observation.data.winddir.text;
-                        const windGust = data.observation.data.windgust.value;
-                        const windSpeed = data.observation.data.windspeed.value;
-                        
+                        const airTemp = data.observation.data.airtemp.value !== null ? data.observation.data.airtemp.value : "No Data";
+                        const lastUpdated = data.observation.data.datetime.iso8601 !== null ? data.observation.data.datetime.iso8601 : "No Data";
+                        const dewPoint = data.observation.data.dewpoint.value !== null ? data.observation.data.dewpoint.value : "No Data";
+                        const meanWaveDir = data.observation.data.meanwavedir.value !== null ? data.observation.data.meanwavedir.value : "No Data";
+                        const meanWaveDirText = data.observation.data.meanwavedir.text !== null ? data.observation.data.meanwavedir.text : "No Data";
+                        const pressure = data.observation.data.pressure.value !== null ? data.observation.data.pressure.value : "No Data";
+                        const pressureTend = data.observation.data.pressuretendency.value !== null ? data.observation.data.pressuretendency.value : "No Data";
+                        const tide = data.observation.data.tide.value !== null ? data.observation.data.tide.value : "No Data";
+                        const visibility = data.observation.data.visibility.value !== null ? data.observation.data.visibility.value : "No Data";
+                        const waterTemp = data.observation.data.watertemp.value !== null ? data.observation.data.watertemp.value : "No Data";
+                        const waveHeight = data.observation.data.waveht.value !== null ? data.observation.data.waveht.value : "No Data";
+                        const windDir = data.observation.data.winddir.value !== null ? data.observation.data.winddir.value : "No Data";
+                        const windDirText = data.observation.data.winddir.text !== null ? data.observation.data.winddir.text : "No Data";
+                        const windGust = data.observation.data.windgust.value !== null ? data.observation.data.windgust.value : "No Data";
+                        const windSpeed = data.observation.data.windspeed.value !== null ? data.observation.data.windspeed.value : "No Data";
 
-
-                      // Create the popup content using HTML tables
+        // Create the popup content using HTML tables
         const popupContent = `
             <h5>Station Information</h5>
             <table style="width:100%; border-collapse: collapse; text-align: left; margin-bottom: 15px;">
