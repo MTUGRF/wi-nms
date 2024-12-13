@@ -186,24 +186,20 @@
           popupTemplate: sofarInfo,
           listMode: "hide"
         });        
-
+        // the webmap hosted on ArcGIS Online
         const webmap = new WebMap({
-          portalItem: { // autocasts as new PortalItem()
+          portalItem: { 
             id: "1143fa1055ac4afaac271f9c5ca33c48"
           }
         });
 
         const view = new MapView({
           container: "viewDiv",
-          map: webmap          
-        });
-
-       
-        
+          map: webmap,
+          zoom: 9          
+        });        
         
         view.when(function() {
-
-
          // get the layers on the existing web map
         let boundary = webmap.allLayers.find(function(layer) {          
             return layer.title === "WSCNMS Boundary";
@@ -220,15 +216,17 @@
             return layer.title === "WSCNMS Bathymetry";
           })
 
-        webmap.add(beachCameraLayer, 9999);
+        
         webmap.add(ndbcLayer, 5);
         webmap.add(trafficLightLayer, 0);
         webmap.add(sofarLayer, 5);
         webmap.add(sitesLayer, 3);
+        webmap.add(beachCameraLayer, 9999999999999);
         webmap.reorder(boundary, 2);
         webmap.reorder(zones, 1);
         webmap.reorder(hillshade, 1);
         webmap.reorder(bathy, 1);
+
         
 
 
@@ -303,7 +301,7 @@ view.ui.add(layerListExpand, "top-left");
               symbol: {
                 type: "simple-marker",
                 color: color,
-                size: "12px",
+                size: "18px",
                 outline: {
                   color: "#000",
                   width: 1
@@ -366,15 +364,7 @@ view.ui.add(layerListExpand, "top-left");
       case "6": return "Water Closed: No Swimming Allowed. Water closed to the public.";
       default: return "Unknown status";
     }
-  }
-
-
-
-        fetch("https://api.sofarocean.com/api/latest-data?spotterId=SPOT-30949C&includeSurfaceTempData=true&token=ddeec47c3c3f59bf757c6087630e6c")
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data);
-                    });
+  }        
 
         // what the popup for a selected feature 
         reactiveUtils.watch(
@@ -382,13 +372,22 @@ view.ui.add(layerListExpand, "top-left");
           (graphic) => {
             if (graphic) {
                 console.log(graphic);
-                if (graphic.layer.id === "beach-cameras") {                     
+                if (graphic.layer.id === "beach-cameras") {
+                  const cameraBody = document.getElementById('cameraBody'); 
+                  cameraBody.innerHTML = ''                  
                   const cameraName = graphic.attributes.name;
                   const cameraUrl = graphic.attributes.url;
+                  if (cameraUrl != "https://www.youtube.com/embed/p780CkCgNVE") {
+                    cameraBody.innerHTML = '<img src="" title="description" id="cameraFrame" width="100%" height="auto"></img>'
+
                   console.log(cameraUrl);
                   document.getElementById("cameraFrame").src = cameraUrl; 
                   document.getElementById("cameraTitle").textContent = cameraName;   
-                  cameraModal.show();               
+                  cameraModal.show();
+                  } else {
+                    cameraBody.innerHTML = '<iframe src="https://www.youtube.com/embed/p780CkCgNVE" title="description" id="cameraFrame" width="100%" height="100%"></iframe>'
+                    cameraModal.show();
+                  }               
                 } else if (graphic.layer.id == "sofar") {
                   console.log("sofar",graphic);
 
@@ -663,7 +662,7 @@ view.ui.add(layerListExpand, "top-left");
         <h5 class="modal-title" id="cameraTitle"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" id="cameraBody">
         <img src="" title="description" id="cameraFrame" width="100%" height="auto"></img> 
       </div>      
     </div>
